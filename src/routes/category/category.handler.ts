@@ -1,7 +1,7 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
 import { eq } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
-import { CreateCategorySchema, DeleteCategorySchema, GetCategorySchemaById, UpdateCategorySchema } from "./category.route";
+import { CreateCategorySchema, DeleteCategorySchema, GetCategoriesSchemaByOutlet, GetCategorySchemaById, UpdateCategorySchema } from "./category.route";
 import { db } from "../../db";
 import { category } from "../../db/schema";
 
@@ -22,7 +22,7 @@ export const createCategory: AppRouteHandler<CreateCategorySchema> = async (c) =
     }
 
     const [categoryData] = await db.insert(category).values({
-        is_available: isAvailable,
+        isAvailable,
         name,
         outletId: outletData.id
     }).returning()
@@ -58,6 +58,41 @@ export const getCategoryById: AppRouteHandler<GetCategorySchemaById> = async (c)
     return c.json(response, HttpStatusCode.OK);
 }
 
+export const getCategoriesByOutlet: AppRouteHandler<GetCategoriesSchemaByOutlet> = async (c) => {
+    const { id } = c.req.valid("param")
+
+    if (!id) {
+        return c.json({ message: "Outlet id is required" }, HttpStatusCode.BAD_REQUEST)
+    }
+
+    const outletData = await db.query.outlet.findFirst({
+        where: (outlet, { eq }) => eq(outlet.id, id)
+    })
+
+    if (!outletData) {
+        return c.json({ message: "Outlet not found" }, HttpStatusCode.NOT_FOUND);
+    }
+
+    const categoriesData = await db.query.category.findMany({
+        where: (cat, { eq }) => eq(cat.outletId, outletData.id),
+        with: {
+            liquors: true
+        }
+    })
+
+    if (!categoriesData) {
+        return c.json({ message: "Categories not found" }, HttpStatusCode.NOT_FOUND);
+    }
+
+    const response = {
+        message: "Categories fetched successfully",
+        data: categoriesData
+    }
+
+    return c.json(response, HttpStatusCode.OK);
+
+}
+
 export const updateCategory: AppRouteHandler<UpdateCategorySchema> = async (c) => {
     const body = c.req.valid("json")
     const params = c.req.valid("param")
@@ -84,7 +119,7 @@ export const updateCategory: AppRouteHandler<UpdateCategorySchema> = async (c) =
     const [updatedCategory] = await db
         .update(category)
         .set({
-            is_available: isAvailable,
+            isAvailable,
             name
         })
         .where(eq(category.id, id))

@@ -8,7 +8,7 @@ import { orderItem } from "./order.schema";
 
 export const liquor = pgTable("liquor", {
     id: uuid("id").primaryKey().defaultRandom(),
-    categoryId: uuid("category_id").references(() => category.id).unique(),
+    categoryId: uuid("category_id").references(() => category.id),
     image: varchar("image", { length: 255 }),
     name: varchar("name", { length: 255 }).notNull(),
     description: text("description"),

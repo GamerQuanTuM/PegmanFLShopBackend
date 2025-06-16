@@ -4,7 +4,7 @@ import { createRoute } from "@hono/zod-openapi";
 import { createErrorSchema, createMessageObjectSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
 import protect from "../../middlewares/protect";
 import { jsonContent } from "stoker/openapi/helpers";
-import { categoryResponseSchema, createCategorySchema, updateCategorySchema } from "../../db/schema";
+import { categoriesResponseSchema, categoryResponseSchema, createCategorySchema, updateCategorySchema } from "../../db/schema";
 
 export const createCategory = createRoute({
     tags: ['category'],
@@ -47,6 +47,30 @@ export const getCategoryById = createRoute({
     responses: {
         [HttpStatusCode.OK]: jsonContent(
             categoryResponseSchema,
+            "Category Found"
+        ),
+        [HttpStatusCode.NOT_FOUND]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.NOT_FOUND),
+            HttpStatusPhrases.NOT_FOUND
+        ),
+        [HttpStatusCode.BAD_REQUEST]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.BAD_REQUEST),
+            HttpStatusPhrases.BAD_REQUEST
+        ),
+    }
+})
+
+export const getCategoriesOfOutlet = createRoute({
+    tags:["category"],
+    path: "/outlet/:id/categories",
+    method: "get",
+    middleware: [protect],
+    request: {
+        params: IdUUIDParamsSchema
+    },
+    responses: {
+        [HttpStatusCode.OK]: jsonContent(
+            categoriesResponseSchema,
             "Category Found"
         ),
         [HttpStatusCode.NOT_FOUND]: jsonContent(
@@ -119,5 +143,6 @@ export const deleteCategory = createRoute({
 
 export type CreateCategorySchema = typeof createCategory
 export type GetCategorySchemaById = typeof getCategoryById
+export type GetCategoriesSchemaByOutlet = typeof getCategoriesOfOutlet
 export type UpdateCategorySchema = typeof updateCategory
 export type DeleteCategorySchema = typeof deleteCategory

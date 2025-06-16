@@ -17,8 +17,8 @@ export const order = pgTable("order", {
 
 export const orderItem = pgTable("order_item", {
     id: uuid("id").primaryKey().defaultRandom(),
-    liquorId: uuid("liquor_id").references(() => liquor.id).unique(),
-    orderId: uuid("order_id").references(() => order.id).unique(),
+    liquorId: uuid("liquor_id").references(() => liquor.id),
+    orderId: uuid("order_id").references(() => order.id),
     quantity: integer("quantity").notNull(),
     createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().$onUpdateFn(() => new Date()),
