@@ -9,6 +9,7 @@ import { outletManager, selectOutletManagerSchema } from "./outlet-manager.schem
 import { outletTiming, selectOutletTimingSchema } from "./outlet-timing.schema";
 import { outletBartender, selectOutletBartenderSchema } from "./outlet-bartender.schema";
 import { selectOutletTimingSlotSchema } from "./outlet-timing-slot.schema";
+import { category } from "./category.schema";
 
 export const outlet = pgTable("outlet", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -24,7 +25,7 @@ export const outlet = pgTable("outlet", {
 });
 
 
-export const outletRelations = relations(outlet, ({ one }) => ({
+export const outletRelations = relations(outlet, ({ one, many }) => ({
     details: one(outletsDetails, {
         fields: [outlet.detailsId],
         references: [outletsDetails.id],
@@ -49,6 +50,7 @@ export const outletRelations = relations(outlet, ({ one }) => ({
         fields: [outlet.ownerId],
         references: [owner.id],
     }),
+    categories: many(category)
 }));
 
 export const selectOutletSchema = createSelectSchema(outlet)

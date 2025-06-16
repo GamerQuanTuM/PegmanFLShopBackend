@@ -15,3 +15,6 @@ export const dayOfWeekEnum = pgEnum('day_of_week', [
     "SATURDAY",
     "SUNDAY"
 ])
+
+
+export const orderStatus = pgEnum("order_status", ["PREPARE", "PICKUP", "ON_THE_WAY", "DELIVERED", "CANCELLED"])

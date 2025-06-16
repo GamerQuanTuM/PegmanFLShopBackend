@@ -7,6 +7,8 @@ import healthcheck from "./routes/index.route";
 import authRouter, { authenticatedRouter } from "./routes/auth/auth.index";
 import outletRouter from "./routes/outlet/outlet.index"
 import ownerRouter from "./routes/owner/owner.index"
+import categoryRouter from "./routes/category/category.index"
+import liquorRouter from "./routes/liquor/liquor.index"
 
 const app = createApp();
 
@@ -17,7 +19,9 @@ const routes = [
     authRouter,
     authenticatedRouter,
     outletRouter,
-    ownerRouter
+    ownerRouter,
+    categoryRouter,
+    liquorRouter
 ] as const;
 
 routes.forEach((route) => {

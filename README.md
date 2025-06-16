@@ -7,6 +7,7 @@ This document provides an overview of the database schema used in the Pegman fl_
 - [Enumerations](#enumerations)
 - [Tables](#tables)
   - [Owner](#owner)
+  - [Session](#session)
   - [Outlet](#outlet)
   - [Outlet Details](#outlet-details)
   - [Outlet Legal Document](#outlet-legal-document)
@@ -14,13 +15,15 @@ This document provides an overview of the database schema used in the Pegman fl_
   - [Outlet Bartender](#outlet-bartender)
   - [Outlet Timing](#outlet-timing)
   - [Outlet Timing Slot](#outlet-timing-slot)
-  - [Session](#session)
+  - [Category](#category)
+  - [Liquor](#liquor)
+  - [Order](#order)
+  - [Order Item](#order-item)
   - [Relationships](#relationships)
 
 ## Enumerations
 
 The application uses several PostgreSQL enumerations to enforce data consistency:
-
 
 ### `account_type`
 - SAVINGS
@@ -34,8 +37,15 @@ The application uses several PostgreSQL enumerations to enforce data consistency
 - FRIDAY
 - SATURDAY
 - SUNDAY
-## Tables
 
+### `order_status`
+- PREPARE
+- PICKUP
+- ON_THE_WAY
+- DELIVERED
+- CANCELLED
+
+## Tables
 
 ### Owner
 
@@ -52,12 +62,12 @@ Stores information about outlet owners.
 
 ### Session
 
-Stores information about outlet owners.
+Stores session information for outlet owners.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
-| ownerId | UUID
+| ownerId | UUID | Reference to owner |
 | model | VARCHAR | Model of the phone |
 | createdAt | TIMESTAMP | Creation timestamp |
 | updatedAt | TIMESTAMP | Last update timestamp |
@@ -81,8 +91,6 @@ Central table that connects all outlet-related information.
 
 ### Outlet Details
 
-Stores basic information about an outlet.
-
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
@@ -98,8 +106,6 @@ Stores basic information about an outlet.
 | updatedAt | TIMESTAMP | Last update timestamp |
 
 ### Outlet Legal Document
-
-Stores legal and financial information about an outlet.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -117,8 +123,6 @@ Stores legal and financial information about an outlet.
 
 ### Outlet Manager
 
-Stores information about outlet managers.
-
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
@@ -130,8 +134,6 @@ Stores information about outlet managers.
 
 ### Outlet Bartender
 
-Stores information about outlet bartenders.
-
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
@@ -142,8 +144,6 @@ Stores information about outlet bartenders.
 
 ### Outlet Timing
 
-Stores general timing information about an outlet.
-
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
@@ -152,18 +152,63 @@ Stores general timing information about an outlet.
 
 ### Outlet Timing Slot
 
-Stores specific opening and closing times for each day of the week.
-
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
 | outletTimingId | UUID | Reference to outlet timing |
-| day | day_of_week | Day of the week |
+| day_of_week | day_of_week | Day of the week |
 | openingTime | TIME | Opening time |
 | closingTime | TIME | Closing time |
 | createdAt | TIMESTAMP | Creation timestamp |
 | updatedAt | TIMESTAMP | Last update timestamp |
 
+### Category
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID | Primary key |
+| outletId | UUID | Reference to outlet |
+| name | VARCHAR(255) | Category name |
+| is_available | BOOLEAN | Category availability |
+| createdAt | TIMESTAMP | Creation timestamp |
+| updatedAt | TIMESTAMP | Last update timestamp |
+
+### Liquor
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID | Primary key |
+| categoryId | UUID | Reference to category |
+| image | VARCHAR(255) | Image URL |
+| name | VARCHAR(255) | Liquor name |
+| description | TEXT | Liquor description |
+| quantity | INTEGER | Quantity in stock |
+| price | DOUBLE PRECISION | Price |
+| inStock | BOOLEAN | Availability |
+| createdAt | TIMESTAMP | Creation timestamp |
+| updatedAt | TIMESTAMP | Last update timestamp |
+
+### Order
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID | Primary key |
+| userId | UUID | Reference to user |
+| status | order_status | Order status |
+| price | DOUBLE PRECISION | Total price |
+| createdAt | TIMESTAMP | Creation timestamp |
+| updatedAt | TIMESTAMP | Last update timestamp |
+
+### Order Item
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID | Primary key |
+| liquorId | UUID | Reference to liquor |
+| orderId | UUID | Reference to order |
+| quantity | INTEGER | Quantity ordered |
+| createdAt | TIMESTAMP | Creation timestamp |
+| updatedAt | TIMESTAMP | Last update timestamp |
 
 ## Relationships
 
@@ -181,6 +226,20 @@ Stores specific opening and closing times for each day of the week.
 - An outlet has one manager
 - An outlet has one timing record
 - An outlet has one bartender (optional)
+- An outlet has many categories
+
+### Category Relationships
+- A category belongs to one outlet
+- A category has many liquors
+
+### Liquor Relationships
+- A liquor belongs to one category
+- A liquor can appear in one order item
+
+### Order Relationships
+- An order has many order items
+- An order item belongs to one order
+- An order item references one liquor
 
 ### Outlet Timing Relationships
 - An outlet timing can have many timing slots

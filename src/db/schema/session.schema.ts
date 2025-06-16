@@ -5,7 +5,7 @@ import { owner } from "./owner.schema";
 
 export const session = pgTable("session", {
     id: uuid("id").primaryKey().defaultRandom(),
-    ownerId: uuid("owner_id"),
+    ownerId: uuid("owner_id").notNull(),
     model: text("model"),
     expiresAt: timestamp('expires_at', { withTimezone: false }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),

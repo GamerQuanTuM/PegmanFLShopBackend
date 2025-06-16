@@ -7,3 +7,6 @@ export * from "./outlet-timing.schema";
 export * from "./outlet-bartender.schema";
 export * from "./outlet-timing-slot.schema";
 export * from "./session.schema"
+export * from "./category.schema"
+export * from "./liquor.schema"
+export * from "./order.schema"
