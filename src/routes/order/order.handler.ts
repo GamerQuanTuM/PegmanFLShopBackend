@@ -1,7 +1,7 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
 import { AppRouteHandler } from "../../types";
 import { db } from "../../db";
-import { GetOrdersSchema } from "./order.route"
+import { GetOrdersSchema, GetOutletByIdSchema } from "./order.route"
 import { order } from "../../db/schema";
 import { and, asc, desc, eq, gte, ilike, lte, or, count } from "drizzle-orm";
 import { orderStatus } from "../../db/schema/enums";
@@ -79,5 +79,24 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
         total: Number(total)
     }
 
+    return c.json(response, HttpStatusCode.OK)
+}
+
+export const getOrderById: AppRouteHandler<GetOutletByIdSchema> = async (c) => {
+    const params = c.req.valid("param")
+    const orderData = await db.query.order.findFirst({
+        where: eq(order.id, params.id),
+        with: {
+            orderItems: true
+        }
+    })
+    if (!orderData) {
+        return c.json({ message: "Order not found" }, HttpStatusCode.NOT_FOUND)
+    }
+
+    const response = {
+        message: "Order fetched successfully",
+        data: orderData
+    }
     return c.json(response, HttpStatusCode.OK)
 }

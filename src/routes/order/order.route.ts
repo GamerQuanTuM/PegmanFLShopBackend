@@ -4,7 +4,7 @@ import * as HttpStatusPhrases from "stoker/http-status-phrases";
 import { createErrorSchema, createMessageObjectSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
 import { jsonContent, jsonContentOneOf } from "stoker/openapi/helpers";
 import protect from "../../middlewares/protect";
-import { responseOrdersSchema } from "../../db/schema";
+import { responseOrderSchema, responseOrdersSchema } from "../../db/schema";
 import { orderStatus } from "../../db/schema/enums";
 
 const getOrdersSchema = z.object({
@@ -41,10 +41,35 @@ export const getOrdersOfOutlet = createRoute({
 
         [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContentOneOf(
             [createErrorSchema(IdUUIDParamsSchema), createErrorSchema(getOrdersSchema)],
-            ""
+            HttpStatusPhrases.UNPROCESSABLE_ENTITY
         )
     }
 });
 
+export const getOutletById = createRoute({
+    tags: ["order"],
+    method: "get",
+    path: "/order/:id",
+    middleware: [protect],
+    request: {
+        params: IdUUIDParamsSchema
+    },
+    responses: {
+        [HttpStatusCode.OK]: jsonContent(
+            responseOrderSchema,
+            HttpStatusPhrases.OK
+        ),
+        [HttpStatusCode.NOT_FOUND]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.NOT_FOUND),
+            HttpStatusPhrases.NOT_FOUND
+        ),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
+            createErrorSchema(IdUUIDParamsSchema),
+            HttpStatusPhrases.UNPROCESSABLE_ENTITY
+        )
+    }
+})
+
 
 export type GetOrdersSchema = typeof getOrdersOfOutlet
+export type GetOutletByIdSchema = typeof getOutletById

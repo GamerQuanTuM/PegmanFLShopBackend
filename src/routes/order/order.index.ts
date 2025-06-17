@@ -5,5 +5,6 @@ import * as routes from "./order.route";
 
 const router = createRouter<AppBindings>()
     .openapi(routes.getOrdersOfOutlet, handler.getOrdersOfOutlet)
+    .openapi(routes.getOutletById, handler.getOrderById)
 
 export default router
