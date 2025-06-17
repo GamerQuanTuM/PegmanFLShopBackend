@@ -36,15 +36,11 @@ export const updateOwner: AppRouteHandler<UpdateOwnerRoute> = async (c) => {
 
 export const getOwnerById: AppRouteHandler<GetOwnerByIdRoute> = async (c) => {
     const { id } = c.req.valid("param")
-    const { outlets, bartender, crystalCollection, details, goldCollection, infinityPass, legalDocument, manager, silverCollection, timing } = c.req.valid("query")
+    const { outlets, bartender, details, legalDocument, manager, timing } = c.req.valid("query")
 
     const nestedWith = {
         bartender,
-        crystalCollection,
-        goldCollection,
-        silverCollection,
         details,
-        infinityPass,
         legalDocument,
         manager,
         timing: timing ? {

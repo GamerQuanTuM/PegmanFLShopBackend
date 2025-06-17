@@ -1,7 +1,7 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, count } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
-import { CreateLiquorSchema, DeleteLiquorSchema, GetLiquorSchemaById, UpdateLiquorSchema } from "./liquor.routes";
+import { CreateLiquorSchema, DeleteLiquorSchema, GetLiquorSchemaById, UpdateLiquorSchema, GetLiquorsOfCategorySchema } from "./liquor.route";
 import { db } from "../../db";
 import { liquor } from "../../db/schema";
 import { uploadFiles } from "../../lib/storage";
@@ -151,3 +151,58 @@ export const deleteLiquor: AppRouteHandler<DeleteLiquorSchema> = async (c) => {
 
     return c.json({ message: "Liquor deleted successfully" }, HttpStatusCode.OK);
 }
+
+export const getLiquorsOfCategory: AppRouteHandler<GetLiquorsOfCategorySchema> = async (c) => {
+    const { id } = c.req.valid("param");
+    const {
+        name,
+        inStock,
+        minPrice,
+        maxPrice,
+        sortBy,
+        sortOrder,
+        limit,
+        page
+    } = c.req.valid("query");
+
+    // ✅ Check if category exists
+    const categoryData = await db.query.category.findFirst({
+        where: (cat, { eq }) => eq(cat.id, id),
+    });
+
+    if (!categoryData) {
+        return c.json({ message: "Category not found" }, HttpStatusCode.NOT_FOUND);
+    }
+
+    const filters = [eq(liquor.categoryId, id)];
+
+    if (name) filters.push(ilike(liquor.name, `%${name}%`));
+    if (inStock) filters.push(eq(liquor.inStock, inStock === "true"));
+    if (minPrice) filters.push(gte(liquor.price, minPrice));
+    if (maxPrice) filters.push(lte(liquor.price, maxPrice));
+
+    const offset = (page - 1) * limit;
+
+    const [{ count: total }] = await db
+        .select({ count: count() })
+        .from(liquor)
+        .where(and(...filters));
+
+    const data = await db.query.liquor.findMany({
+        where: and(...filters),
+        orderBy: (liq) =>
+            sortOrder === "asc" ? asc(liq[sortBy]) : desc(liq[sortBy]),
+        limit,
+        offset,
+    });
+
+    return c.json({
+        message: "Liquors fetched successfully",
+        data,
+        total: Number(total),
+        page,
+        limit,
+        totalPages: Math.ceil(Number(total) / limit),
+    }, HttpStatusCode.OK);
+};
+

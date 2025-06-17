@@ -50,10 +50,6 @@ export const getOwnerById = createRoute({
             legalDocument: z.coerce.boolean().optional().default(false),
             manager: z.coerce.boolean().optional().default(false),
             timing: z.coerce.boolean().optional().default(false),
-            crystalCollection: z.coerce.boolean().optional().default(false),
-            goldCollection: z.coerce.boolean().optional().default(false),
-            silverCollection: z.coerce.boolean().optional().default(false),
-            infinityPass: z.coerce.boolean().optional().default(false),
         })
     },
     responses: {

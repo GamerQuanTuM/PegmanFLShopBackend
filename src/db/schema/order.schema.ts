@@ -4,11 +4,13 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { liquor } from "./liquor.schema";
 import { orderStatus } from "./enums";
+import { outlet } from "./outlet.schema";
 
 export const order = pgTable("order", {
     id: uuid("id").primaryKey().defaultRandom(),
+    outletId: uuid("outlet_id").notNull(),
     userId: uuid("user_id").notNull(),
-    status:orderStatus("order_status").notNull(),
+    status: orderStatus("order_status").notNull(),
     price: doublePrecision("price").notNull(),
     createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().$onUpdateFn(() => new Date()),
@@ -24,8 +26,12 @@ export const orderItem = pgTable("order_item", {
     updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().$onUpdateFn(() => new Date()),
 })
 
-export const orderRelations = relations(order, ({ many }) => ({
-    order: many(orderItem)
+export const orderRelations = relations(order, ({ many, one }) => ({
+    orderItems: many(orderItem),
+    outlet: one(outlet, {
+        fields: [order.outletId],
+        references: [outlet.id]
+    })
 }))
 
 export const orderItemRelations = relations(orderItem, ({ one }) => ({
@@ -53,4 +59,12 @@ export const updateOrderSchema = createOrderSchema.optional()
 export const responseOrderSchema = z.object({
     message: z.string(),
     data: selectOrderSchema
+})
+export const responseOrdersSchema = z.object({
+    message: z.string(),
+    data: z.array(selectOrderSchema),
+    total: z.number(),
+    totalPages: z.number(),
+    page: z.number(),
+    limit: z.number(),
 })

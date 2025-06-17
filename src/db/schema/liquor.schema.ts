@@ -19,12 +19,12 @@ export const liquor = pgTable("liquor", {
     updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().$onUpdateFn(() => new Date()),
 });
 
-export const liquorRelations = relations(liquor, ({ one }) => ({
+export const liquorRelations = relations(liquor, ({ one, many }) => ({
     category: one(category, {
         fields: [liquor.categoryId],
         references: [category.id],
     }),
-    orderItem: one(orderItem)
+    orderItem: many(orderItem)
 }))
 
 
@@ -48,4 +48,12 @@ export const updateLiquorSchema = createLiquorSchema.partial()
 export const responseLiquorSchema = z.object({
     message: z.string(),
     data: selectLiquorSchema
+})
+export const responseLiquorsSchema = z.object({
+    message: z.string(),
+    data: z.array(selectLiquorSchema),
+    total: z.number(),
+    totalPages: z.number(),
+    page: z.number(),
+    limit: z.number(),
 })

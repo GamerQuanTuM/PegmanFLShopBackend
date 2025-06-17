@@ -9,6 +9,7 @@ import outletRouter from "./routes/outlet/outlet.index"
 import ownerRouter from "./routes/owner/owner.index"
 import categoryRouter from "./routes/category/category.index"
 import liquorRouter from "./routes/liquor/liquor.index"
+import orderRouter from "./routes/order/order.index"
 
 const app = createApp();
 
@@ -21,7 +22,8 @@ const routes = [
     outletRouter,
     ownerRouter,
     categoryRouter,
-    liquorRouter
+    liquorRouter,
+    orderRouter
 ] as const;
 
 routes.forEach((route) => {

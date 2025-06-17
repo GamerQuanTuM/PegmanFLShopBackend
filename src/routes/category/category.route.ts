@@ -3,7 +3,7 @@ import * as HttpStatusPhrases from "stoker/http-status-phrases"
 import { createRoute } from "@hono/zod-openapi";
 import { createErrorSchema, createMessageObjectSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
 import protect from "../../middlewares/protect";
-import { jsonContent } from "stoker/openapi/helpers";
+import { jsonContent, jsonContentOneOf } from "stoker/openapi/helpers";
 import { categoriesResponseSchema, categoryResponseSchema, createCategorySchema, updateCategorySchema } from "../../db/schema";
 
 export const createCategory = createRoute({
@@ -21,8 +21,8 @@ export const createCategory = createRoute({
             categoryResponseSchema,
             "Category Created"
         ),
-        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
-            createErrorSchema(createCategorySchema),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContentOneOf(
+            [createErrorSchema(createCategorySchema), createErrorSchema(IdUUIDParamsSchema)],
             "Validation error",
         ),
         [HttpStatusCode.NOT_FOUND]: jsonContent(
@@ -57,11 +57,15 @@ export const getCategoryById = createRoute({
             createMessageObjectSchema(HttpStatusPhrases.BAD_REQUEST),
             HttpStatusPhrases.BAD_REQUEST
         ),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
+            createErrorSchema(IdUUIDParamsSchema),
+            HttpStatusPhrases.UNPROCESSABLE_ENTITY
+        )
     }
 })
 
 export const getCategoriesOfOutlet = createRoute({
-    tags:["category"],
+    tags: ["category"],
     path: "/outlet/:id/categories",
     method: "get",
     middleware: [protect],
@@ -81,6 +85,10 @@ export const getCategoriesOfOutlet = createRoute({
             createMessageObjectSchema(HttpStatusPhrases.BAD_REQUEST),
             HttpStatusPhrases.BAD_REQUEST
         ),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
+            createErrorSchema(IdUUIDParamsSchema),
+            HttpStatusPhrases.UNPROCESSABLE_ENTITY
+        )
     }
 })
 
@@ -101,8 +109,8 @@ export const updateCategory = createRoute({
             categoryResponseSchema,
             "Category Found"
         ),
-        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
-            createErrorSchema(updateCategorySchema),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContentOneOf(
+            [createErrorSchema(updateCategorySchema), createErrorSchema(IdUUIDParamsSchema)],
             "Validation error",
         ),
         [HttpStatusCode.NOT_FOUND]: jsonContent(
@@ -137,6 +145,10 @@ export const deleteCategory = createRoute({
             createMessageObjectSchema(HttpStatusPhrases.BAD_REQUEST),
             HttpStatusPhrases.BAD_REQUEST
         ),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
+            createErrorSchema(IdUUIDParamsSchema),
+            HttpStatusPhrases.UNPROCESSABLE_ENTITY
+        )
     }
 })
 
