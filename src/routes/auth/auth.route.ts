@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { createErrorSchema, createMessageObjectSchema, } from "stoker/openapi/schemas";
+import { createErrorSchema, createMessageObjectSchema, IdUUIDParamsSchema, } from "stoker/openapi/schemas";
 import * as HttpStatusPhrases from "stoker/http-status-phrases";
 import { jsonContent } from "stoker/openapi/helpers";
 import { ownerOtpSchema, selectOtpSchema, ownerResponseSchema } from "../../db/schema/owner.schema";
@@ -124,8 +124,26 @@ export const protectedRoute = createRoute({
     }
 })
 
+export const isSessionValidRoute = createRoute({
+    tags: ["auth"],
+    method: "get",
+    middleware: [protect],
+    path: "/is-session-valid",
+    responses: {
+        [HttpStatusCode.OK]: jsonContent(
+            createMessageObjectSchema("Session is valid"),
+            "Session is valid"
+        ),
+        [HttpStatusCode.UNAUTHORIZED]: jsonContent(
+            createMessageObjectSchema("Session is invalid"),
+            "Session is invalid"
+        ),
+    }
+})
+
 export type GenerateOtpRoute = typeof generateOtp;
 export type SignupRoute = typeof signup;
 export type LoginRoute = typeof login;
 export type LogoutRoute = typeof logout;
 export type ProtectedRoute = typeof protectedRoute;
+export type IsSessionValidRoute = typeof isSessionValidRoute;

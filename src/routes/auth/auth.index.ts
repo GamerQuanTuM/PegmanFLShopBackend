@@ -13,5 +13,6 @@ const router = createRouter<BaseBindings>()
 export const authenticatedRouter = createRouter<AppBindings>()
     .openapi(routes.logout, handlers.logout)
     .openapi(routes.protectedRoute, handlers.protectedRoute)
+    .openapi(routes.isSessionValidRoute, handlers.isSessionValid)
 
 export default router;

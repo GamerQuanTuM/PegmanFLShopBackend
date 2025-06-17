@@ -1,10 +1,11 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
 import { AppRouteHandler, AuthenticatedContext, BaseRouteHandler } from "../../types";
-import { GenerateOtpRoute, LoginRoute, LogoutRoute, ProtectedRoute, SignupRoute } from "./auth.route";
+import { GenerateOtpRoute, IsSessionValidRoute, LoginRoute, LogoutRoute, ProtectedRoute, SignupRoute } from "./auth.route";
 import { db } from "../../db";
 import { owner } from "../../db/schema";
 import { redisGet, redisSet } from "../../helpers/redis";
 import { createSession, destroySessionById } from "../../helpers/session";
+import { getCookie } from "hono/cookie";
 
 export const generateOtp: BaseRouteHandler<GenerateOtpRoute> = async (c) => {
     const { mobile_number, login } = c.req.valid('json')
@@ -121,6 +122,24 @@ export const protectedRoute: AppRouteHandler<ProtectedRoute> = async (c: Authent
         where: (owner, { eq }) => eq(owner.id, userId),
     })
     return c.json("Protected route", HttpStatusCode.OK)
+}
+
+
+export const isSessionValid: AppRouteHandler<IsSessionValidRoute> = async (c) => {
+    const sessionId = getCookie(c, 'sessionId')
+    
+    if (!sessionId) {
+        return c.json({ message: "Session is invalid" }, HttpStatusCode.UNAUTHORIZED)
+    }
+    
+    const session = await db.query.session.findFirst({
+        where: (session, { eq }) => eq(session.id, sessionId),
+    })
+    
+    if (session) {
+        return c.json({ message: "Session is valid" }, HttpStatusCode.OK)
+    }
+    return c.json({ message: "Session is invalid" }, HttpStatusCode.UNAUTHORIZED)
 }
 
 // export const protectedRoute: AppRouteHandler<ProtectedRoute> = async (c: AuthenticatedContext) => {
