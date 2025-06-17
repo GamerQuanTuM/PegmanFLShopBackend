@@ -153,56 +153,59 @@ export const deleteLiquor: AppRouteHandler<DeleteLiquorSchema> = async (c) => {
 }
 
 export const getLiquorsOfCategory: AppRouteHandler<GetLiquorsOfCategorySchema> = async (c) => {
-    const { id } = c.req.valid("param");
-    const {
-        name,
-        inStock,
-        minPrice,
-        maxPrice,
-        sortBy,
-        sortOrder,
-        limit,
-        page
-    } = c.req.valid("query");
+    const params = c.req.valid("param");
+    const query = c.req.valid("query");
+    
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     // ✅ Check if category exists
     const categoryData = await db.query.category.findFirst({
-        where: (cat, { eq }) => eq(cat.id, id),
+        where: (cat, { eq }) => eq(cat.id, params.id),
     });
 
     if (!categoryData) {
         return c.json({ message: "Category not found" }, HttpStatusCode.NOT_FOUND);
     }
 
-    const filters = [eq(liquor.categoryId, id)];
+    const filters = [eq(liquor.categoryId, params.id)];
 
-    if (name) filters.push(ilike(liquor.name, `%${name}%`));
-    if (inStock) filters.push(eq(liquor.inStock, inStock === "true"));
-    if (minPrice) filters.push(gte(liquor.price, minPrice));
-    if (maxPrice) filters.push(lte(liquor.price, maxPrice));
+    if (query.name) {
+        filters.push(ilike(liquor.name, `%${query.name}%`));
+    }
 
-    const offset = (page - 1) * limit;
+    if (query.inStock) {
+        filters.push(eq(liquor.inStock, query.inStock === "true"));
+    }
+
+    const sortField = query.sortBy ?? "createdAt";
+    const sortOrder = query.sortOrder === "desc" ? "desc" : "asc";
 
     const [{ count: total }] = await db
         .select({ count: count() })
         .from(liquor)
         .where(and(...filters));
 
-    const data = await db.query.liquor.findMany({
+    const result = await db.query.liquor.findMany({
         where: and(...filters),
-        orderBy: (liq) =>
-            sortOrder === "asc" ? asc(liq[sortBy]) : desc(liq[sortBy]),
+        orderBy: (liquor) =>
+            sortOrder === "asc"
+                ? asc(liquor[sortField])
+                : desc(liquor[sortField]),
         limit,
-        offset,
+        offset: skip,
     });
 
-    return c.json({
+    const response = {
         message: "Liquors fetched successfully",
-        data,
-        total: Number(total),
+        data: result,
         page,
         limit,
         totalPages: Math.ceil(Number(total) / limit),
-    }, HttpStatusCode.OK);
+        total: Number(total)
+    };
+
+    return c.json(response, HttpStatusCode.OK);
 };
 

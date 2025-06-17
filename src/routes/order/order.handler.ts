@@ -1,9 +1,9 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
+import { and, asc, desc, eq, gte, ilike, lte, or, count } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
 import { db } from "../../db";
 import { GetOrdersSchema, GetOutletByIdSchema } from "./order.route"
 import { order } from "../../db/schema";
-import { and, asc, desc, eq, gte, ilike, lte, or, count } from "drizzle-orm";
 import { orderStatus } from "../../db/schema/enums";
 
 
@@ -11,8 +11,8 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
     const params = c.req.valid("param")
     const query = c.req.valid("query")
 
-    const page = parseInt(query.page ?? "1");
-    const limit = parseInt(query.limit ?? "10");
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
     const filters = [];
