@@ -2,9 +2,10 @@ import * as HttpStatusCode from "stoker/http-status-codes"
 import { AppRouteHandler } from "../../types";
 import { db } from "../../db";
 import { outlet, outletBartender, outletLegalDocument, outletManager, outletsDetails, outletTiming, outletTimingSlot } from "../../db/schema";
-import { CreateOutletLegalDocumentsSchema, CreateOutletDetailsSchema, CreateOutletTimingSchema, CreateOutletSchema, GetOutletSchemaById, VerifyOutletSchema, AddOutletTimingSlotSchema, UpdateOutletTimingSlotSchema } from "./outlet.route";
+import { CreateOutletLegalDocumentsSchema, CreateOutletDetailsSchema, CreateOutletTimingSchema, CreateOutletSchema, GetOutletSchemaById, VerifyOutletSchema, AddOutletTimingSlotSchema, UpdateOutletTimingSlotSchema, DeleteOutletTimingSlotSchema } from "./outlet.route";
 import { eq } from "drizzle-orm";
 import { uploadFiles } from "../../lib/storage"
+
 
 export const createOutletLegalDocuments: AppRouteHandler<CreateOutletLegalDocumentsSchema> = async (c) => {
     const { bankAccountType, gstNumber, bankAccountNumber, bankIfscCode, panCardNumber, offShopLicenseImage, onShopLicenseImage, panCardImage } = c.req.valid("form");
@@ -381,4 +382,20 @@ export const updateOutletTimingSlot: AppRouteHandler<UpdateOutletTimingSlotSchem
     }
 
     return c.json(response, HttpStatusCode.OK);
+}
+
+export const deleteOutletTimingSlot: AppRouteHandler<DeleteOutletTimingSlotSchema> = async (c) => {
+    const { id } = c.req.valid("param");
+
+    const outletTimingSlotData = await db.query.outletTimingSlot.findFirst({
+        where: (outletTimingSlot, { eq }) => eq(outletTimingSlot.id, id),
+    });
+
+    if (!outletTimingSlotData) {
+        return c.json({ message: "Outlet timing slot not found" }, HttpStatusCode.NOT_FOUND);
+    }
+
+    await db.delete(outletTimingSlot).where(eq(outletTimingSlot.id, id));
+
+    return c.json({ message: "Outlet timing slot deleted successfully" }, HttpStatusCode.OK);
 }

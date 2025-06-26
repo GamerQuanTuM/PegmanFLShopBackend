@@ -1,9 +1,9 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
 import { CreateCategorySchema, DeleteCategorySchema, GetCategoriesSchemaByOutlet, GetCategorySchemaById, UpdateCategorySchema } from "./category.route";
 import { db } from "../../db";
-import { category } from "../../db/schema";
+import { category, liquor, orderItem } from "../../db/schema";
 
 export const createCategory: AppRouteHandler<CreateCategorySchema> = async (c) => {
     const { isAvailable, name } = c.req.valid("json")
@@ -142,19 +142,35 @@ export const deleteCategory: AppRouteHandler<DeleteCategorySchema> = async (c) =
 
     const { id } = params
 
-    // Check if the category exists first
-    const existingCategory = await db.query.category.findFirst({
-        where: (cat, { eq }) => eq(cat.id, id)
+    await db.transaction(async (tx) => {
+        // Check if the category exists first
+        const existingCategory = await tx.query.category.findFirst({
+            where: (cat, { eq }) => eq(cat.id, id)
+        })
+
+        if (!existingCategory) {
+            return c.json({ message: "Category not found" }, HttpStatusCode.NOT_FOUND);
+        }
+
+        // Get all liquors in this category
+        const liquors = await tx.query.liquor.findMany({
+            where: (liquor, { eq }) => eq(liquor.categoryId, id)
+        })
+
+        if (liquors.length > 0) {
+            const liquorIds = liquors.map(l => l.id)
+
+            // Delete all order items that reference these liquors
+            await tx.delete(orderItem).where(inArray(orderItem.liquorId, liquorIds))
+
+            // Delete all liquors in this category
+            await tx.delete(liquor).where(eq(liquor.categoryId, id))
+        }
+
+        // Finally, delete the category
+        await tx.delete(category).where(eq(category.id, id))
     })
 
-    if (!existingCategory) {
-        return c.json({ message: "Category not found" }, HttpStatusCode.NOT_FOUND);
-    }
+    return c.json({ message: "Category deleted successfully" }, HttpStatusCode.OK)
 
-    // Delete the category
-    await db
-        .delete(category)
-        .where(eq(category.id, id));
-
-    return c.json({ message: "Category deleted successfully" }, HttpStatusCode.OK);
 }

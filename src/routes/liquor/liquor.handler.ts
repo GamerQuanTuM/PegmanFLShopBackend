@@ -1,9 +1,9 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { and, asc, desc, eq, gte, ilike, lte, count } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, count } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
 import { CreateLiquorSchema, DeleteLiquorSchema, GetLiquorSchemaById, UpdateLiquorSchema, GetLiquorsOfCategorySchema } from "./liquor.route";
 import { db } from "../../db";
-import { liquor } from "../../db/schema";
+import { liquor, orderItem } from "../../db/schema";
 import { uploadFiles } from "../../lib/storage";
 
 export const createLiquor: AppRouteHandler<CreateLiquorSchema> = async (c) => {
@@ -134,28 +134,30 @@ export const deleteLiquor: AppRouteHandler<DeleteLiquorSchema> = async (c) => {
     }
 
     const { id } = params
+    await db.transaction(async (tx) => {
+        // Check if the liquor exists first
+        const existingLiquor = await tx.query.liquor.findFirst({
+            where: (liq, { eq }) => eq(liq.id, id)
+        })
 
-    // Check if the liquor exists first
-    const existingLiquor = await db.query.liquor.findFirst({
-        where: (liq, { eq }) => eq(liq.id, id)
+        if (!existingLiquor) {
+            return c.json({ message: "Liquor not found" }, HttpStatusCode.NOT_FOUND);
+        }
+
+        // Delete all orderItems associated with the liquor
+        await tx.delete(orderItem).where(eq(orderItem.liquorId, id))
+
+        // Delete the liquor
+        await tx.delete(liquor).where(eq(liquor.id, id))
     })
 
-    if (!existingLiquor) {
-        return c.json({ message: "Liquor not found" }, HttpStatusCode.NOT_FOUND);
-    }
+    return c.json({ message: "Liquor deleted successfully" }, HttpStatusCode.OK)
 
-    // Delete the liquor
-    await db
-        .delete(liquor)
-        .where(eq(liquor.id, id));
-
-    return c.json({ message: "Liquor deleted successfully" }, HttpStatusCode.OK);
 }
-
 export const getLiquorsOfCategory: AppRouteHandler<GetLiquorsOfCategorySchema> = async (c) => {
     const params = c.req.valid("param");
     const query = c.req.valid("query");
-    
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;

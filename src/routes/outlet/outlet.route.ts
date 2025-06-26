@@ -249,6 +249,30 @@ export const modifyOutletTimingSlotSchema = createRoute({
     }
 })
 
+export const deleteOutletTimingSlotSchema = createRoute({
+    tags: ["outlet"],
+    method: "delete",
+    path: "/outlet-timing-slot/{id}",
+    middleware: [protect],
+    request: {
+        params: IdUUIDParamsSchema
+    },
+    responses: {
+        [HttpStatusCode.OK]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.OK),
+            HttpStatusPhrases.OK
+        ),
+        [HttpStatusCode.NOT_FOUND]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.NOT_FOUND),
+            HttpStatusPhrases.NOT_FOUND
+        ),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContent(
+            createErrorSchema(IdUUIDParamsSchema),
+            "Validation error"
+        ),
+    }
+})
+
 export type CreateOutletLegalDocumentsSchema = typeof createOutletLegalDocuments;
 export type CreateOutletDetailsSchema = typeof createOutletDetailsSchema;
 export type CreateOutletTimingSchema = typeof createOutletTimingSchema;
@@ -257,3 +281,4 @@ export type GetOutletSchemaById = typeof getOutletSchemaById;
 export type VerifyOutletSchema = typeof verifyOutletSchema;
 export type AddOutletTimingSlotSchema = typeof addOutletTimingSlotSchema;
 export type UpdateOutletTimingSlotSchema = typeof modifyOutletTimingSlotSchema;
+export type DeleteOutletTimingSlotSchema = typeof deleteOutletTimingSlotSchema;
