@@ -22,11 +22,13 @@ const getOrdersSchema = z.object({
 
 export const getOrdersOfOutlet = createRoute({
     tags: ["order"],
-    path: "/order/:id",
+    path: "/order/:outletId",
     method: "get",
     middleware: [protect],
     request: {
-        params: IdUUIDParamsSchema,
+        params: z.object({
+            outletId: z.string()
+        }),
         query: getOrdersSchema,
     },
     responses: {

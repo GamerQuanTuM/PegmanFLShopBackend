@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { category } from "./category.schema";
-import { orderItem } from "./order.schema";
+// import { orderItem } from "./order.schema";
 
 export const liquor = pgTable("liquor", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -19,12 +19,12 @@ export const liquor = pgTable("liquor", {
     updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().$onUpdateFn(() => new Date()),
 });
 
-export const liquorRelations = relations(liquor, ({ one, many }) => ({
+export const liquorRelations = relations(liquor, ({ one }) => ({
     category: one(category, {
         fields: [liquor.categoryId],
         references: [category.id],
     }),
-    orderItem: many(orderItem)
+    // orderItem: many(orderItem)
 }))
 
 

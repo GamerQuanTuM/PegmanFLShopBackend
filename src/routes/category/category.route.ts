@@ -1,6 +1,6 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
 import * as HttpStatusPhrases from "stoker/http-status-phrases"
-import { createRoute } from "@hono/zod-openapi";
+import { createRoute, z } from "@hono/zod-openapi";
 import { createErrorSchema, createMessageObjectSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
 import protect from "../../middlewares/protect";
 import { jsonContent, jsonContentOneOf } from "stoker/openapi/helpers";
@@ -70,7 +70,11 @@ export const getCategoriesOfOutlet = createRoute({
     method: "get",
     middleware: [protect],
     request: {
-        params: IdUUIDParamsSchema
+        params: IdUUIDParamsSchema,
+        query: z.object({
+            page: z.string().optional(),
+            limit: z.string().optional()
+        })
     },
     responses: {
         [HttpStatusCode.OK]: jsonContent(

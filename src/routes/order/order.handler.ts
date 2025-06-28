@@ -1,9 +1,9 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { and, asc, desc, eq, gte, ilike, lte, or, count } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, or, count, inArray } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
 import { db } from "../../db";
 import { GetOrdersSchema, GetOutletByIdSchema } from "./order.route"
-import { order } from "../../db/schema";
+import { order, orderItem } from "../../db/schema";
 import { orderStatus } from "../../db/schema/enums";
 
 
@@ -39,11 +39,33 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
         filters.push(lte(order.createdAt, new Date(query.to)));
     }
 
+    // Updated search logic - removed order status, added liquorName search
     if (query.search) {
-        filters.push(or(
-            ilike(order.status, `%${query.search}%`),
-            ilike(order.userId, `%${query.search}%`),
-        ));
+        // Get order IDs that have orderItems with matching liquorName
+        const ordersWithMatchingItems = await db
+            .select({ orderId: orderItem.orderId })
+            .from(orderItem)
+            .where(ilike(orderItem.liquorName, `%${query.search}%`));
+
+        const orderIds = ordersWithMatchingItems.map(item => item.orderId).filter(Boolean) as string[];
+
+        const searchFilters = [];
+
+        // Try to match userId exactly if the search term looks like a UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(query.search)) {
+            searchFilters.push(eq(order.userId, query.search));
+        }
+
+        // If we found orders with matching liquor names, include them in search
+        if (orderIds.length > 0) {
+            searchFilters.push(inArray(order.id, orderIds));
+        }
+
+        // Only apply search filters if we have any
+        if (searchFilters.length > 0) {
+            filters.push(or(...searchFilters));
+        }
     }
 
     const sortField = query.sortBy ?? "createdAt";
@@ -52,11 +74,14 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
     const [{ count: total }] = await db
         .select({ count: count() })
         .from(order)
-        .where(and(...filters));
+        .where(and(
+            eq(order.outletId, params.outletId),
+            ...filters
+        ));
 
     const result = await db.query.order.findMany({
         where: and(
-            eq(order.outletId, params.id),
+            eq(order.outletId, params.outletId),
             ...filters
         ),
         orderBy: (order) =>

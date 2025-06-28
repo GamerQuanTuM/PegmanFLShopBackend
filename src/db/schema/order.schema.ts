@@ -1,8 +1,8 @@
-import { pgTable, uuid, timestamp, integer, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, integer, doublePrecision, varchar } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
-import { liquor } from "./liquor.schema";
+// import { liquor } from "./liquor.schema";
 import { orderStatus } from "./enums";
 import { outlet } from "./outlet.schema";
 
@@ -19,7 +19,10 @@ export const order = pgTable("order", {
 
 export const orderItem = pgTable("order_item", {
     id: uuid("id").primaryKey().defaultRandom(),
-    liquorId: uuid("liquor_id").references(() => liquor.id),
+    // Need to remove the relationship with liquor table
+    // liquorId: uuid("liquor_id").references(() => liquor.id),
+    liquorImage: varchar("liquor_image", { length: 255 }),
+    liquorName: varchar("liquor_name", { length: 255 }).notNull(),
     orderId: uuid("order_id").references(() => order.id),
     quantity: integer("quantity").notNull(),
     createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
@@ -40,10 +43,10 @@ export const orderItemRelations = relations(orderItem, ({ one }) => ({
         references: [order.id]
     }),
 
-    liquor: one(liquor, {
-        fields: [orderItem.liquorId],
-        references: [liquor.id],
-    })
+    // liquor: one(liquor, {
+    //     fields: [orderItem.liquorId],
+    //     references: [liquor.id],
+    // })
 }))
 
 

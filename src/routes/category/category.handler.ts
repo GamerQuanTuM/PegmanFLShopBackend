@@ -1,9 +1,9 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { eq, inArray } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
 import { CreateCategorySchema, DeleteCategorySchema, GetCategoriesSchemaByOutlet, GetCategorySchemaById, UpdateCategorySchema } from "./category.route";
 import { db } from "../../db";
-import { category, liquor, orderItem } from "../../db/schema";
+import { category, liquor } from "../../db/schema";
 
 export const createCategory: AppRouteHandler<CreateCategorySchema> = async (c) => {
     const { isAvailable, name } = c.req.valid("json")
@@ -59,7 +59,13 @@ export const getCategoryById: AppRouteHandler<GetCategorySchemaById> = async (c)
 }
 
 export const getCategoriesByOutlet: AppRouteHandler<GetCategoriesSchemaByOutlet> = async (c) => {
-    const { id } = c.req.valid("param")
+    const params = c.req.valid("param");
+    const query = c.req.valid("query");
+
+    const { id } = params;
+    const page = Number(query.page) ?? 1;
+    const limit = Number(query.limit) ?? 10;
+    const skip = (page - 1) * limit;
 
     if (!id) {
         return c.json({ message: "Outlet id is required" }, HttpStatusCode.BAD_REQUEST)
@@ -73,24 +79,34 @@ export const getCategoriesByOutlet: AppRouteHandler<GetCategoriesSchemaByOutlet>
         return c.json({ message: "Outlet not found" }, HttpStatusCode.NOT_FOUND);
     }
 
+    // Get total count for pagination
+    const [{ count: total }] = await db
+        .select({ count: count() })
+        .from(category)
+        .where(eq(category.outletId, outletData.id));
+
+    // Get paginated results
     const categoriesData = await db.query.category.findMany({
-        where: (cat, { eq }) => eq(cat.outletId, outletData.id),
+        where: eq(category.outletId, outletData.id),
+        limit,
+        offset: skip,
         with: {
             liquors: true
         }
-    })
-
-    if (!categoriesData) {
-        return c.json({ message: "Categories not found" }, HttpStatusCode.NOT_FOUND);
-    }
+    });
 
     const response = {
         message: "Categories fetched successfully",
-        data: categoriesData
+        data: categoriesData,
+        meta: {
+            page,
+            limit,
+            totalPages: Math.ceil(Number(total) / limit),
+            total: Number(total)
+        }
     }
 
     return c.json(response, HttpStatusCode.OK);
-
 }
 
 export const updateCategory: AppRouteHandler<UpdateCategorySchema> = async (c) => {
@@ -158,10 +174,6 @@ export const deleteCategory: AppRouteHandler<DeleteCategorySchema> = async (c) =
         })
 
         if (liquors.length > 0) {
-            const liquorIds = liquors.map(l => l.id)
-
-            // Delete all order items that reference these liquors
-            await tx.delete(orderItem).where(inArray(orderItem.liquorId, liquorIds))
 
             // Delete all liquors in this category
             await tx.delete(liquor).where(eq(liquor.categoryId, id))
