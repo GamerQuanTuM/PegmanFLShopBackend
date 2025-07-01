@@ -273,6 +273,40 @@ export const deleteOutletTimingSlotSchema = createRoute({
     }
 })
 
+export const forceCloseOutletSchema = createRoute({
+    tags: ["outlet"],
+    method: "patch",
+    // timing id
+    path: "force-close/{id}",
+    middleware: [protect],
+    request: {
+        params: IdUUIDParamsSchema,
+        body: jsonContent(
+            z.object({
+                isOpen: z.boolean().default(false),
+            }),
+            "Force Close Outlet"
+        )
+    },
+    responses: {
+        [HttpStatusCode.OK]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.OK),
+            HttpStatusPhrases.OK
+        ),
+
+        [HttpStatusCode.NOT_FOUND]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.NOT_FOUND),
+            HttpStatusPhrases.NOT_FOUND
+        ),
+        [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContentOneOf(
+            [createErrorSchema(IdUUIDParamsSchema), createErrorSchema(z.object({
+                isOpen: z.boolean().default(false),
+            }))],
+            "Validation error"
+        ),
+    }
+})
+
 export type CreateOutletLegalDocumentsSchema = typeof createOutletLegalDocuments;
 export type CreateOutletDetailsSchema = typeof createOutletDetailsSchema;
 export type CreateOutletTimingSchema = typeof createOutletTimingSchema;
@@ -282,3 +316,4 @@ export type VerifyOutletSchema = typeof verifyOutletSchema;
 export type AddOutletTimingSlotSchema = typeof addOutletTimingSlotSchema;
 export type UpdateOutletTimingSlotSchema = typeof modifyOutletTimingSlotSchema;
 export type DeleteOutletTimingSlotSchema = typeof deleteOutletTimingSlotSchema;
+export type ForceCloseOutletSchema = typeof forceCloseOutletSchema;

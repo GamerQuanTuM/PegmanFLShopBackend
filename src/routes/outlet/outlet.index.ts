@@ -13,5 +13,6 @@ const router = createRouter<AppBindings>()
     .openapi(routes.addOutletTimingSlotSchema, handler.addOutletTiming)
     .openapi(routes.modifyOutletTimingSlotSchema, handler.updateOutletTimingSlot)
     .openapi(routes.deleteOutletTimingSlotSchema, handler.deleteOutletTimingSlot)
+    .openapi(routes.forceCloseOutletSchema, handler.forceCloseOutlet)
 
 export default router;

@@ -3,6 +3,7 @@ import { createApp } from "./lib/create-app";
 import sessionMiddleware from "./middlewares/session";
 import scheduler from "./helpers/scheduler";
 import { cleanupExpiredSessions } from "./helpers/session";
+import { timingReset } from "./helpers/outlet";
 import healthcheck from "./routes/index.route";
 import authRouter, { authenticatedRouter } from "./routes/auth/auth.index";
 import outletRouter from "./routes/outlet/outlet.index"
@@ -33,6 +34,10 @@ routes.forEach((route) => {
 configureOpenAPI(app as any);
 
 // Cron Jobs
+// Reseting every 10 mins
 scheduler.scheduleJob("session-cleanup", "*/10 * * * *", cleanupExpiredSessions);
+
+// Reseting every day at midnight 00:00
+scheduler.scheduleJob("outlet-timing-reset", "0 0 * * *", timingReset);
 
 export default app;

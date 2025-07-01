@@ -204,7 +204,8 @@ Central table that connects all outlet-related information.
 | Field | Type | Description |
 |-------|------|-------------|
 | id | UUID | Primary key |
-| liquorId | UUID | Reference to liquor |
+| liquorImage | VARCHAR | Image of the liquor |
+| liquorName | VARCHAR | Name of the liquor |
 | orderId | UUID | Reference to order |
 | quantity | INTEGER | Quantity ordered |
 | createdAt | TIMESTAMP | Creation timestamp |
@@ -234,12 +235,10 @@ Central table that connects all outlet-related information.
 
 ### Liquor Relationships
 - A liquor belongs to one category
-- A liquor can appear in one order item
 
 ### Order Relationships
 - An order has many order items
 - An order item belongs to one order
-- An order item references one liquor
 
 ### Outlet Timing Relationships
 - An outlet timing can have many timing slots

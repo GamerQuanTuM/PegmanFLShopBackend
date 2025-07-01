@@ -2,7 +2,7 @@ import * as HttpStatusCode from "stoker/http-status-codes"
 import { AppRouteHandler } from "../../types";
 import { db } from "../../db";
 import { outlet, outletBartender, outletLegalDocument, outletManager, outletsDetails, outletTiming, outletTimingSlot } from "../../db/schema";
-import { CreateOutletLegalDocumentsSchema, CreateOutletDetailsSchema, CreateOutletTimingSchema, CreateOutletSchema, GetOutletSchemaById, VerifyOutletSchema, AddOutletTimingSlotSchema, UpdateOutletTimingSlotSchema, DeleteOutletTimingSlotSchema } from "./outlet.route";
+import { CreateOutletLegalDocumentsSchema, CreateOutletDetailsSchema, CreateOutletTimingSchema, CreateOutletSchema, GetOutletSchemaById, VerifyOutletSchema, AddOutletTimingSlotSchema, UpdateOutletTimingSlotSchema, DeleteOutletTimingSlotSchema, ForceCloseOutletSchema } from "./outlet.route";
 import { eq } from "drizzle-orm";
 import { uploadFiles } from "../../lib/storage"
 
@@ -125,7 +125,7 @@ export const createOutletTiming: AppRouteHandler<CreateOutletTimingSchema> = asy
     }
 
     // Check for duplicate days
-    const days = slots.map((slot:any) => slot.day);
+    const days = slots.map((slot: any) => slot.day);
     const uniqueDays = new Set(days);
     if (days.length !== uniqueDays.size) {
         return c.json(
@@ -143,7 +143,7 @@ export const createOutletTiming: AppRouteHandler<CreateOutletTimingSchema> = asy
 
         // Batch insert slots for better performance
         const insertedSlots = await tx.insert(outletTimingSlot).values(
-            slots.map((slot:any) => ({
+            slots.map((slot: any) => ({
                 day: slot.day,
                 openingTime: slot.openingTime,
                 closingTime: slot.closingTime,
@@ -321,11 +321,11 @@ export const verifyOutlet: AppRouteHandler<VerifyOutletSchema> = async (c) => {
     }, HttpStatusCode.OK);
 };
 
-export const addOutletTiming:AppRouteHandler<AddOutletTimingSlotSchema> = async (c) => {
+export const addOutletTiming: AppRouteHandler<AddOutletTimingSlotSchema> = async (c) => {
     const { id } = c.req.valid("param");
     const { day, openingTime, closingTime } = c.req.valid("json");
 
-   const outletTimingData = await db.query.outletTiming.findFirst({
+    const outletTimingData = await db.query.outletTiming.findFirst({
         where: (outletTiming, { eq }) => eq(outletTiming.id, id),
     });
 
@@ -359,7 +359,7 @@ export const addOutletTiming:AppRouteHandler<AddOutletTimingSlotSchema> = async 
 
 
 export const updateOutletTimingSlot: AppRouteHandler<UpdateOutletTimingSlotSchema> = async (c) => {
-   const { id } = c.req.valid("param");
+    const { id } = c.req.valid("param");
     const { day, openingTime, closingTime } = c.req.valid("json");
 
     const outletTimingSlotData = await db.query.outletTimingSlot.findFirst({
@@ -371,12 +371,12 @@ export const updateOutletTimingSlot: AppRouteHandler<UpdateOutletTimingSlotSchem
     }
 
     const [updatedOutletTimingSlot] = await db
-       .update(outletTimingSlot)
-       .set({ day, openingTime, closingTime })
-       .where(eq(outletTimingSlot.id, id))
-       .returning()
+        .update(outletTimingSlot)
+        .set({ day, openingTime, closingTime })
+        .where(eq(outletTimingSlot.id, id))
+        .returning()
 
-       const response = {
+    const response = {
         message: "Outlet timing slot updated successfully",
         data: updatedOutletTimingSlot
     }
@@ -398,4 +398,21 @@ export const deleteOutletTimingSlot: AppRouteHandler<DeleteOutletTimingSlotSchem
     await db.delete(outletTimingSlot).where(eq(outletTimingSlot.id, id));
 
     return c.json({ message: "Outlet timing slot deleted successfully" }, HttpStatusCode.OK);
+}
+
+export const forceCloseOutlet: AppRouteHandler<ForceCloseOutletSchema> = async (c) => {
+    const { id } = c.req.valid("param");
+    const { isOpen } = c.req.valid("json");
+
+    const outletTimingData = await db.query.outletTiming.findFirst({
+        where: (outletTiming, { eq }) => eq(outletTiming.id, id),
+    });
+
+    if (!outletTimingData) {
+        return c.json({ message: "Outlet timing not found" }, HttpStatusCode.NOT_FOUND);
+    }
+
+    const [updatedOutletTiming] = await db.update(outletTiming).set({ isOpen }).where(eq(outletTiming.id, id)).returning();
+
+    return c.json({ message: `Outlet timing updated successfully with id ${updatedOutletTiming.id}` }, HttpStatusCode.OK);
 }

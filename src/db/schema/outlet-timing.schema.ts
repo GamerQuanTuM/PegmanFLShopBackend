@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, boolean } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
@@ -7,6 +7,7 @@ import { outlet } from "./outlet.schema";
 
 export const outletTiming = pgTable("outlet_timing", {
   id: uuid("id").primaryKey().defaultRandom(),
+  isOpen: boolean("is_open").default(true),
   createdAt: timestamp("created_at", { withTimezone: false }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().$onUpdateFn(() => new Date()),
 });
