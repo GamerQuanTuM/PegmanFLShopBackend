@@ -11,8 +11,9 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
     const params = c.req.valid("param")
     const query = c.req.valid("query")
 
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+
+    const page = query.page ? parseInt(query.page) : 1;
+    const limit = query.limit ? parseInt(query.limit) : 10;
     const skip = (page - 1) * limit;
 
     const filters = [];
@@ -75,13 +76,13 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
         .select({ count: count() })
         .from(order)
         .where(and(
-            eq(order.outletId, params.outletId),
+            eq(order.outletId, params.id),
             ...filters
         ));
 
     const result = await db.query.order.findMany({
         where: and(
-            eq(order.outletId, params.outletId),
+            eq(order.outletId, params.id),
             ...filters
         ),
         orderBy: (order) =>
@@ -109,6 +110,7 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
 
 export const getOrderById: AppRouteHandler<GetOutletByIdSchema> = async (c) => {
     const params = c.req.valid("param")
+    console.log(params)
     const orderData = await db.query.order.findFirst({
         where: eq(order.id, params.id),
         with: {

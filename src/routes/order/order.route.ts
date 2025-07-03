@@ -11,8 +11,8 @@ const getOrdersSchema = z.object({
     search: z.string().optional(),
     sortBy: z.enum(["createdAt", "updatedAt", "price", "status"]).optional(),
     sortOrder: z.enum(["asc", "desc"]).optional(),
-    page: z.number().optional(),
-    limit: z.number().optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
     status: z.enum(orderStatus.enumValues).optional(),
     minPrice: z.string().optional(),
     maxPrice: z.string().optional(),
@@ -22,12 +22,12 @@ const getOrdersSchema = z.object({
 
 export const getOrdersOfOutlet = createRoute({
     tags: ["order"],
-    path: "/order/:outletId",
+    path: "/order/:id/outlet",
     method: "get",
     middleware: [protect],
     request: {
         params: z.object({
-            outletId: z.string()
+            id: z.string()
         }),
         query: getOrdersSchema,
     },
