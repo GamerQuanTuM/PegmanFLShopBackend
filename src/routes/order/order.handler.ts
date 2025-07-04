@@ -11,7 +11,6 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
     const params = c.req.valid("param")
     const query = c.req.valid("query")
 
-
     const page = query.page ? parseInt(query.page) : 1;
     const limit = query.limit ? parseInt(query.limit) : 10;
     const skip = (page - 1) * limit;
@@ -40,8 +39,18 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
         filters.push(lte(order.createdAt, new Date(query.to)));
     }
 
-    // Updated search logic - removed order status, added liquorName search
+    // Updated search logic - includes order ID, user ID, and liquor name search
     if (query.search) {
+        const searchFilters = [];
+
+        // Try to match order ID exactly if the search term looks like a UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(query.search)) {
+            // Search by order ID
+            searchFilters.push(ilike(order.id, `%${query.search}%`));
+            // Search by user ID
+            searchFilters.push(ilike(order.userId, `%${query.search}%`));
+        }
         // Get order IDs that have orderItems with matching liquorName
         const ordersWithMatchingItems = await db
             .select({ orderId: orderItem.orderId })
@@ -49,14 +58,6 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
             .where(ilike(orderItem.liquorName, `%${query.search}%`));
 
         const orderIds = ordersWithMatchingItems.map(item => item.orderId).filter(Boolean) as string[];
-
-        const searchFilters = [];
-
-        // Try to match userId exactly if the search term looks like a UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(query.search)) {
-            searchFilters.push(eq(order.userId, query.search));
-        }
 
         // If we found orders with matching liquor names, include them in search
         if (orderIds.length > 0) {
