@@ -1,5 +1,5 @@
 import * as HttpStatusCode from "stoker/http-status-codes"
-import { and, asc, desc, eq, gte, ilike, lte, or, count, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, or, count, inArray, sql } from "drizzle-orm";
 import { AppRouteHandler } from "../../types";
 import { db } from "../../db";
 import { GetOrdersSchema, GetOutletByIdSchema } from "./order.route"
@@ -39,19 +39,46 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
         filters.push(lte(order.createdAt, new Date(query.to)));
     }
 
-    // Updated search logic - includes order ID, user ID, and liquor name search
+
     if (query.search) {
         const searchFilters = [];
+        // UUID pattern matching - checks if search looks like part of a UUID
+        const uuidPartPattern = /^[0-9a-f-]+$/i;
+        const looksLikeUuidPart = uuidPartPattern.test(query.search);
 
-        // Try to match order ID exactly if the search term looks like a UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(query.search)) {
-            // Search by order ID
-            searchFilters.push(ilike(order.id, `%${query.search}%`));
-            // Search by user ID
-            searchFilters.push(ilike(order.userId, `%${query.search}%`));
+        if (looksLikeUuidPart) {
+            // For UUID parts, we want to match segments anywhere in the UUID
+            const segments = query.search.split('-').filter(Boolean);
+
+            if (segments.length > 0) {
+                // Method 1: Simple substring matching (most flexible)
+                const searchPattern = `%${query.search}%`;
+                searchFilters.push(sql`${order.id}::text ilike ${searchPattern}`);
+                searchFilters.push(sql`${order.userId}::text ilike ${searchPattern}`);
+
+                // Method 2: Strict segment boundary matching (more precise)
+                // This ensures we match complete segments in the correct order
+                const segmentPattern = segments.map(s => `${s}`).join('-');
+                const boundaryPattern = `%-${segmentPattern}-%`;
+                const prefixPattern = `${segmentPattern}-%`;
+                const suffixPattern = `%-${segmentPattern}`;
+
+                searchFilters.push(sql`${order.id}::text ilike ${boundaryPattern}`);
+                searchFilters.push(sql`${order.id}::text ilike ${prefixPattern}`);
+                searchFilters.push(sql`${order.id}::text ilike ${suffixPattern}`);
+                searchFilters.push(sql`${order.userId}::text ilike ${boundaryPattern}`);
+                searchFilters.push(sql`${order.userId}::text ilike ${prefixPattern}`);
+                searchFilters.push(sql`${order.userId}::text ilike ${suffixPattern}`);
+            }
+
+            // For complete UUIDs, add exact match
+            if (query.search.length === 36) {
+                searchFilters.push(eq(order.id, query.search));
+                searchFilters.push(eq(order.userId, query.search));
+            }
         }
-        // Get order IDs that have orderItems with matching liquorName
+
+        // Liquor name search (unchanged)
         const ordersWithMatchingItems = await db
             .select({ orderId: orderItem.orderId })
             .from(orderItem)
@@ -59,12 +86,10 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
 
         const orderIds = ordersWithMatchingItems.map(item => item.orderId).filter(Boolean) as string[];
 
-        // If we found orders with matching liquor names, include them in search
         if (orderIds.length > 0) {
             searchFilters.push(inArray(order.id, orderIds));
         }
 
-        // Only apply search filters if we have any
         if (searchFilters.length > 0) {
             filters.push(or(...searchFilters));
         }
@@ -108,6 +133,7 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
 
     return c.json(response, HttpStatusCode.OK)
 }
+
 
 export const getOrderById: AppRouteHandler<GetOutletByIdSchema> = async (c) => {
     const params = c.req.valid("param")
