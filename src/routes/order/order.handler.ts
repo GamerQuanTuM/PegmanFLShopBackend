@@ -5,6 +5,9 @@ import { db } from "../../db";
 import { GetOrdersSchema, GetOutletByIdSchema } from "./order.route"
 import { order, orderItem } from "../../db/schema";
 import { orderStatus } from "../../db/schema/enums";
+import { parseDate } from "../../helpers/date";
+
+
 
 
 export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => {
@@ -32,13 +35,21 @@ export const getOrdersOfOutlet: AppRouteHandler<GetOrdersSchema> = async (c) => 
     }
 
     if (query.from) {
-        filters.push(gte(order.createdAt, new Date(query.from)));
+        console.log(query.from)
+        const fromDate = parseDate(query.from);
+        if (isNaN(fromDate.getTime())) {
+            return c.json({ message: "Invalid 'from' date format. Use DD/MM/YYYY or YYYY-MM-DD" }, HttpStatusCode.BAD_REQUEST);
+        }
+        filters.push(gte(order.createdAt, fromDate));
     }
 
     if (query.to) {
-        filters.push(lte(order.createdAt, new Date(query.to)));
+        const toDate = parseDate(query.to);
+        if (isNaN(toDate.getTime())) {
+            return c.json({ message: "Invalid 'to' date format. Use DD/MM/YYYY or YYYY-MM-DD" }, HttpStatusCode.BAD_REQUEST);
+        }
+        filters.push(lte(order.createdAt, toDate));
     }
-
 
     if (query.search) {
         const searchFilters = [];

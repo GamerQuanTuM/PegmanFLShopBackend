@@ -44,6 +44,10 @@ export const getOrdersOfOutlet = createRoute({
         [HttpStatusCode.UNPROCESSABLE_ENTITY]: jsonContentOneOf(
             [createErrorSchema(IdUUIDParamsSchema), createErrorSchema(getOrdersSchema)],
             HttpStatusPhrases.UNPROCESSABLE_ENTITY
+        ),
+        [HttpStatusCode.BAD_REQUEST]: jsonContent(
+            createMessageObjectSchema(HttpStatusPhrases.BAD_REQUEST),
+            HttpStatusPhrases.BAD_REQUEST
         )
     }
 });
